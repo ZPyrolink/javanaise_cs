@@ -7,9 +7,9 @@
 
 package irc;
 
-import jvn.JvnException;
-import jvn.JvnObject;
-import jvn.JvnServerImpl;
+import jvn.utils.JvnException;
+import jvn.object.JvnObject;
+import jvn.server.JvnServerImpl;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;

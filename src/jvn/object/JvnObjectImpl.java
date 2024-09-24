@@ -1,8 +1,15 @@
-package jvn;
+package jvn.object;
+
+import jvn.utils.JvnException;
+import jvn.server.JvnServerImpl;
 
 import java.io.Serializable;
 
 public class JvnObjectImpl implements JvnObject {
+    public JvnObjectImpl(Serializable o, JvnServerImpl jvnServer) {
+
+    }
+
     @Override
     public void jvnLockRead() throws JvnException {
     }
