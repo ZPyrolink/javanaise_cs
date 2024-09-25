@@ -55,7 +55,12 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
      **/
     public Serializable jvnGetSharedObject() throws JvnException;
-
+    /**
+     * Set the shared object associated to this JvnObject
+     *
+     * @throws JvnException
+     **/
+    public void jvnSetSharedObject(Serializable serializable) throws JvnException;;
 
     /**
      * Invalidate the Read lock of the JVN object
@@ -80,4 +85,6 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
      **/
     public Serializable jvnInvalidateWriterForReader() throws JvnException;
+
+
 }

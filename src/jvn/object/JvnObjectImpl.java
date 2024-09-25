@@ -31,7 +31,13 @@ public class JvnObjectImpl implements JvnObject {
 
     @Override
     public Serializable jvnGetSharedObject() throws JvnException {
+        //TODO Cette méthode renvoie l'objet réel (celui encapsulé dans le JvnObject)
         return null;
+    }
+    @Override
+    public void jvnSetSharedObject(Serializable serializable) throws JvnException {
+        //TODO Cette méthode set l'objet réel (celui encapsulé dans le JvnObject)
+
     }
 
     @Override
