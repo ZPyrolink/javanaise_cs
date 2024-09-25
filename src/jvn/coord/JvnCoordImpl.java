@@ -64,7 +64,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      **/
     public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         // to be completed
-        // TODO assing server to map
+        // TODO assign server to map
     }
 
     /**
@@ -90,8 +90,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         // to be completed
         // TODO Invalidation du verrou d'écriture
-
-        // TODO L'objet est mis à jour dans le Coordinator via javaObject.jvnGetSharedObject(serializable) avec la version à jour envoyée par l'écrivain.
+        // TODO Récuperer l'objet mis à jour via javaObject.jvnGetSharedObject(serializable) avec la version à jour envoyée par l'écrivain.
         // TODO Le verrou de lecture est accordé une fois que l'objet est à jour.
         // TODO return l'objet à jour au serveur qui à demandé le lock
         return null;
