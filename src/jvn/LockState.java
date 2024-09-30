@@ -13,15 +13,15 @@ public enum LockState {
      * Writed cahed
      */
     WRITE_CACHED,
-    READ,
-    WRITE,
+    READING,
+    WRITING,
     READ_WRITE_CACHED;
 
     boolean canRead() {
-        return this == READ || this == READ_CACHED || this == READ_WRITE_CACHED;
+        return this == READING || this == READ_CACHED || this == READ_WRITE_CACHED;
     }
 
     boolean canWrite() {
-        return this == WRITE || this == WRITE_CACHED || this == READ_WRITE_CACHED;
+        return this == WRITING || this == WRITE_CACHED || this == READ_WRITE_CACHED;
     }
 }

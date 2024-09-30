@@ -73,32 +73,6 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         }
     }
 
-    public enum LockState {
-        /**
-         * No Lock
-         */
-        NONE,
-        /**
-         * Read cached
-         */
-        READ_CACHED,
-        /**
-         * Writed cahed
-         */
-        WRITE_CACHED,
-        READ,
-        WRITE,
-        READ_WRITE_CACHED;
-
-        boolean canRead() {
-            return this == READ || this == READ_CACHED || this == READ_WRITE_CACHED;
-        }
-
-        boolean canWrite() {
-            return this == WRITE || this == WRITE_CACHED || this == READ_WRITE_CACHED;
-        }
-    }
-
     private static final long serialVersionUID = 1L;
     public static final String COORD_NAME = "coordinator";
     public static final int COORD_PORT = 1099;
