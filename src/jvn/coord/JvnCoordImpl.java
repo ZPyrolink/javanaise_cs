@@ -17,6 +17,8 @@ import java.io.Serializable;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord {
@@ -30,6 +32,9 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     public static final int COORD_PORT = 1099;
     public static final String COORD_HOST = "127.0.0.1";
 
+    private Map<String, JvnObject> objects = new HashMap<>();
+    private Map<Integer, JvnObject> lockReader = new HashMap<>();
+    private Map<Integer, JvnObject> lockWriter = new HashMap<>();
 
 
     /**
@@ -64,7 +69,8 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      **/
     public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         // to be completed
-        // TODO assing server to map
+        // Associate a symbolic name with a JVN object
+        this.objects.put(jon, jo);
     }
 
     /**
@@ -89,11 +95,20 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      **/
     public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         // to be completed
+
+        // récuperer la referance de l'objet
+        JvnObject object = this.objects.get(joi);
+
+        // TODO Récuperer l'objet mis à jour via javaObject.jvnGetSharedObject(serializable) avec la version à jour envoyée par l'écrivain.
+        Serializable serializable = object.jvnGetSharedObject();
+
         // TODO Invalidation du verrou d'écriture
-        // TODO L'objet est mis à jour dans le Coordinator via javaObject.jvnGeetSharedObject(serializable) avec la version à jour envoyée par l'écrivain.
+        object.jvnInvalidateWriter();
         // TODO Le verrou de lecture est accordé une fois que l'objet est à jour.
+        // TODO ajouter dans la map lockReader
+
         // TODO return l'objet à jour au serveur qui à demandé le lock
-        return null;
+        return serializable;
     }
 
     /**
@@ -117,6 +132,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      **/
     public void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         // to be completed
+        this.objects.clear();
     }
 }
 
