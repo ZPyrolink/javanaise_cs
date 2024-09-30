@@ -11,9 +11,9 @@ package jvn.server;
 
 import jvn.coord.JvnCoordImpl;
 import jvn.coord.JvnRemoteCoord;
-import jvn.utils.JvnException;
 import jvn.object.JvnObject;
 import jvn.object.JvnObjectImpl;
+import jvn.utils.JvnException;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -30,7 +30,9 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      *
      */
     private static final long serialVersionUID = 1L;
-    // A JVN server is managed as a singleton
+    /**
+     * A JVN server is managed as a singleton
+     */
     private static JvnServerImpl js = null;
     private JvnRemoteCoord coordinator = null;
     private Registry registery = null;
@@ -41,6 +43,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * Server name
      */
     private String name = "";
+
     /**
      * Default constructor
      *
@@ -50,9 +53,9 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
         super();
         // to be completed
         this.registery = LocateRegistry.getRegistry(JvnCoordImpl.COORD_PORT);
-        this.coordinator = (JvnRemoteCoord)  registery.lookup(JvnCoordImpl.COORD_NAME);
-        this.name=""; //TODO give it a name
-        registery.bind(name,this);
+        this.coordinator = (JvnRemoteCoord) registery.lookup(JvnCoordImpl.COORD_NAME);
+        this.name = ""; //TODO give it a name
+        registery.bind(name, this);
     }
 
     /**
@@ -78,7 +81,11 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws JvnException
      **/
     public void jvnTerminate() throws JvnException {
-        // to be completed
+        try {
+            coordinator.jvnTerminate(this);
+        } catch (RemoteException e) {
+            throw new RuntimeException(e);
+        }
         this.objects.clear();
     }
 
@@ -90,7 +97,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public JvnObject jvnCreateObject(Serializable o) throws JvnException {
         // to be completed
-        JvnObjectImpl jvnObject = new JvnObjectImpl(o, this);
+        JvnObject jvnObject = new JvnObjectImpl(o, this);
         return jvnObject;
     }
 
@@ -120,14 +127,12 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
     public JvnObject jvnLookupObject(String jon) throws JvnException {
         // to be completed
         //une fois l'objet lookup
-        try
-        {
+        try {
             JvnObject object = this.coordinator.jvnLookupObject(jon, this);
             // on l'enregistre dans notre cash representé par la map interceptor
             this.objects.put(object.jvnGetObjectId(), object);
             return object;
-        }
-        catch (RemoteException e){
+        } catch (RemoteException e) {
             e.printStackTrace();
             return null;
         }
