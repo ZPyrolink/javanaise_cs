@@ -9,6 +9,7 @@
 
 package jvn.coord;
 
+import jvn.utils.JvnException;
 import jvn.object.JvnObject;
 import jvn.server.JvnRemoteServer;
 import jvn.utils.JvnException;
@@ -124,6 +125,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public int jvnGetObjectId() throws java.rmi.RemoteException, JvnException {
+        // ToDo: first ID
         return states.values().stream().max(Comparator.comparingInt(ObjectState::getId)).get().getId() + 1;
     }
 
@@ -154,10 +156,10 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 
         LockState lockState = objState.getLockState(js);
 
-        while (!lockState.canRead()) {
-            // ToDo: wait
-            // ToDo: notify ?
-        }
+//        while (!lockState.canRead()) {
+//            // ToDo: wait
+//            // ToDo: notify ?
+//        }
 
         return objState.getValue();
     }
@@ -182,13 +184,20 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         if (state == null)
             throw new JvnException();
 
-        while (!state.canReadLock()) {
-            // ToDo: wait
-            // ToDo: notify ?
-        }
+        JvnObject object = state.getValue();
 
+        Serializable serializable = object.jvnGetSharedObject();
+
+        // ToDo
+        object.jvnInvalidateWriterForReader();
+
+//        while (!state.canReadLock()) {
+//            // ToDo: wait
+//            // ToDo: notify ?
+//        }
         state.putLockStateByServer(js, LockState.R);
-        return state.getValue();
+
+        return serializable;
     }
 
     /**
@@ -211,13 +220,23 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         if (state == null)
             throw new JvnException();
 
-        while (!state.canWriteLock()) {
-            // ToDo: wait
-            // ToDo: notify ?
-        }
+        JvnObject object = state.getValue();
 
-        state.putLockStateByServer(js, LockState.W);
-        return state.getValue();
+        Serializable serializable = object.jvnGetSharedObject();
+
+        // ToDo
+        object.jvnInvalidateWriter();
+        object.jvnInvalidateReader();
+
+        state.putLockStateByServer(js, LockState.R);
+
+
+//        while (!state.canReadLock()) {
+//            // ToDo: wait
+//            // ToDo: notify ?
+//        }
+
+        return serializable;
     }
 
     /**

@@ -162,7 +162,6 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
             e.printStackTrace();
             return null;
         }
-
     }
 
     /**
