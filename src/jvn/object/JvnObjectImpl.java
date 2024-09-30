@@ -6,8 +6,10 @@ import jvn.server.JvnServerImpl;
 import java.io.Serializable;
 
 public class JvnObjectImpl implements JvnObject {
-    public JvnObjectImpl(Serializable o, JvnServerImpl jvnServer) {
+    private Serializable value;
 
+    public JvnObjectImpl(Serializable o, JvnServerImpl jvnServer) {
+        value = o;
     }
 
     @Override
@@ -31,12 +33,12 @@ public class JvnObjectImpl implements JvnObject {
 
     @Override
     public Serializable jvnGetSharedObject() throws JvnException {
-        //TODO Cette méthode renvoie l'objet réel (celui encapsulé dans le JvnObject)
-        return null;
+        return value;
     }
+
     @Override
     public void jvnSetSharedObject(Serializable serializable) throws JvnException {
-        //TODO Cette méthode set l'objet réel (celui encapsulé dans le JvnObject)
+        value = serializable;
 
     }
 
