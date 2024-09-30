@@ -25,7 +25,7 @@ import java.util.Map;
 public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord {
     public static class ObjectState {
         // Unique identifier of the object
-        private int id;
+        private String name;
 
         // (Value) of the object
         private JvnObject value;
@@ -53,12 +53,8 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
             return lockStateByServer.remove(server);
         }
 
-        public int getId() {
-            return id;
-        }
-
-        public ObjectState(int id, JvnObject value, JvnRemoteServer server) {
-            this.id = id;
+        public ObjectState(String name, JvnObject value, JvnRemoteServer server) {
+            this.name = name;
             this.value = value;
             this.lockStateByServer = new HashMap<>();
             lockStateByServer.put(server, LockState.NONE);
@@ -70,6 +66,10 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 
         public boolean canWriteLock() {
             return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.READ);
+        }
+
+        public String getName() {
+            return name;
         }
     }
 
@@ -104,7 +104,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     public static final int COORD_PORT = 1099;
     public static final String COORD_HOST = "127.0.0.1";
 
-    public HashMap<String, ObjectState> states;
+    public HashMap<Integer, ObjectState> states;
 
     /**
      * Default constructor
@@ -124,7 +124,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public int jvnGetObjectId() throws java.rmi.RemoteException, JvnException {
-        return states.isEmpty() ? 0 : states.values().stream().max(Comparator.comparingInt(ObjectState::getId)).get().getId() + 1;
+        return states.isEmpty() ? 0 : states.keySet().stream().max(Comparator.naturalOrder()).get() + 1;
     }
 
     /**
@@ -136,7 +136,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        states.put(jon, new ObjectState(jvnGetObjectId(), jo, js));
+        states.put(jvnGetObjectId(), new ObjectState(jon, jo, js));
     }
 
     /**
@@ -147,7 +147,14 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        ObjectState objState = states.get(jon);
+        ObjectState objState = null;
+
+        for (ObjectState obj : states.values()) {
+            if (obj.name.equals(jon)) {
+                objState = obj;
+                break;
+            }
+        }
 
         if (objState == null)
             throw new JvnException("The '" + jon + "' JVN object doesn't exists");
@@ -171,13 +178,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException, JvnException
      **/
     public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        ObjectState state = null;
-        for (ObjectState value : states.values()) {
-            if (value.getId() == joi) {
-                state = value;
-                break;
-            }
-        }
+        ObjectState state = states.get(joi);
 
         if (state == null)
             throw new JvnException();
@@ -207,13 +208,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException, JvnException
      **/
     public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        ObjectState state = null;
-        for (ObjectState value : states.values()) {
-            if (value.getId() == joi) {
-                state = value;
-                break;
-            }
-        }
+        ObjectState state = states.get(joi);
 
         if (state == null)
             throw new JvnException();
