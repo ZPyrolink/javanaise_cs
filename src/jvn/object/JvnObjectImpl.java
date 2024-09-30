@@ -1,22 +1,32 @@
 package jvn.object;
 
+import jvn.LockState;
+import jvn.server.JvnRemoteServer;
 import jvn.utils.JvnException;
 import jvn.server.JvnServerImpl;
 
 import java.io.Serializable;
 
 public class JvnObjectImpl implements JvnObject {
-    public JvnObjectImpl(Serializable o, JvnServerImpl jvnServer) {
+    private int id;
+    private Serializable cachedValue;
+    private JvnServerImpl server;
+    private LockState lockState;
 
+    public JvnObjectImpl(Serializable o, JvnServerImpl jvnServer) {
+        cachedValue = o;
+        server = jvnServer;
+        lockState = LockState.NONE;
     }
 
     @Override
     public void jvnLockRead() throws JvnException {
+        cachedValue = server.jvnLockRead(id);
     }
 
     @Override
     public void jvnLockWrite() throws JvnException {
-
+        cachedValue = server.jvnLockWrite(id);
     }
 
     @Override
@@ -31,13 +41,12 @@ public class JvnObjectImpl implements JvnObject {
 
     @Override
     public Serializable jvnGetSharedObject() throws JvnException {
-        //TODO Cette méthode renvoie l'objet réel (celui encapsulé dans le JvnObject)
-        return null;
+        return cachedValue;
     }
+
     @Override
     public void jvnSetSharedObject(Serializable serializable) throws JvnException {
-        //TODO Cette méthode set l'objet réel (celui encapsulé dans le JvnObject)
-
+        cachedValue = serializable;
     }
 
     @Override
