@@ -65,11 +65,11 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         }
 
         public boolean canReadLock() {
-            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.W);
+            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.WRITE);
         }
 
         public boolean canWriteLock() {
-            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.R);
+            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.READ);
         }
     }
 
@@ -81,21 +81,21 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         /**
          * Read cached
          */
-        RC,
+        READ_CACHED,
         /**
          * Writed cahed
          */
-        WC,
-        R,
-        W,
-        RWC;
+        WRITE_CACHED,
+        READ,
+        WRITE,
+        READ_WRITE_CACHED;
 
         boolean canRead() {
-            return this == R || this == RC || this == RWC;
+            return this == READ || this == READ_CACHED || this == READ_WRITE_CACHED;
         }
 
         boolean canWrite() {
-            return this == W || this == WC || this == RWC;
+            return this == WRITE || this == WRITE_CACHED || this == READ_WRITE_CACHED;
         }
     }
 
@@ -193,7 +193,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 //            // ToDo: wait
 //            // ToDo: notify ?
 //        }
-        state.putLockStateByServer(js, LockState.R);
+        state.putLockStateByServer(js, LockState.READ);
 
         return serializable;
     }
@@ -226,7 +226,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         object.jvnInvalidateWriter();
         object.jvnInvalidateReader();
 
-        state.putLockStateByServer(js, LockState.R);
+        state.putLockStateByServer(js, LockState.READ);
 
 
 //        while (!state.canReadLock()) {
