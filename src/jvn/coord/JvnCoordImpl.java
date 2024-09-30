@@ -9,7 +9,6 @@
 
 package jvn.coord;
 
-import jvn.utils.JvnException;
 import jvn.object.JvnObject;
 import jvn.server.JvnRemoteServer;
 import jvn.utils.JvnException;
@@ -125,8 +124,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public int jvnGetObjectId() throws java.rmi.RemoteException, JvnException {
-        // ToDo: first ID
-        return states.values().stream().max(Comparator.comparingInt(ObjectState::getId)).get().getId() + 1;
+        return states.isEmpty() ? 0 : states.values().stream().max(Comparator.comparingInt(ObjectState::getId)).get().getId() + 1;
     }
 
     /**
