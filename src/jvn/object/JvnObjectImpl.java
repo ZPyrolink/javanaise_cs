@@ -31,12 +31,12 @@ public class JvnObjectImpl implements JvnObject {
 
     @Override
     public void jvnUnLock() throws JvnException {
-
+        lockState = LockState.NONE;
     }
 
     @Override
     public int jvnGetObjectId() throws JvnException {
-        return 0;
+        return id;
     }
 
     @Override

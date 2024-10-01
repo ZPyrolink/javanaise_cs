@@ -36,6 +36,8 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
     private static JvnServerImpl js = null;
     private JvnRemoteCoord coordinator = null;
     private Registry registery = null;
+
+    private Integer id ;
     //Hashmap de nos objets intercepté pour notre cache
     private Map<Integer, JvnObject> objects = new HashMap<>();
 
@@ -54,7 +56,8 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
         // to be completed
         this.registery = LocateRegistry.getRegistry(JvnCoordImpl.COORD_PORT);
         this.coordinator = (JvnRemoteCoord) registery.lookup(JvnCoordImpl.COORD_NAME);
-        this.name = ""; //TODO give it a name
+        this.id = this.coordinator.jvnGetObjectId();
+        this.name = "server_"+this.id; //TODO give it a name
         registery.bind(name, this);
     }
 
