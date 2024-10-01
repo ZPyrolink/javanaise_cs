@@ -21,7 +21,7 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     @Override
-    public void jvnLockRead() throws JvnException {
+    public synchronized void jvnLockRead() throws JvnException {
         switch (lockState) {
             case NONE -> {
                 cachedValue = server.jvnLockRead(id);
@@ -33,13 +33,13 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     @Override
-    public void jvnLockWrite() throws JvnException {
+    public synchronized void jvnLockWrite() throws JvnException {
         switch (lockState) {
             case NONE -> {
                 cachedValue = server.jvnLockWrite(id);
                 lockState = LockState.WRITING;
             }
-            case WRITE_CACHED -> lockState = LockState.WRITING;
+                case WRITE_CACHED -> lockState = LockState.WRITING;
             case READ_CACHED -> {
                 cachedValue = server.jvnLockWrite(id);
                 lockState = LockState.READ_WRITE_CACHED;
@@ -48,7 +48,7 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     @Override
-    public void jvnUnLock() throws JvnException {
+    public synchronized void jvnUnLock() throws JvnException {
         lockState = switch (lockState) {
             case NONE, READ_WRITE_CACHED -> lockState;
             case READ_CACHED, READING -> LockState.READ_CACHED;
@@ -74,7 +74,7 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     @Override
-    public void jvnInvalidateReader() throws JvnException {
+    public synchronized void jvnInvalidateReader() throws JvnException {
         while (lockState == LockState.READING) {
             try {
                 wait();
@@ -87,7 +87,7 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     @Override
-    public Serializable jvnInvalidateWriter() throws JvnException {
+    public  synchronized Serializable jvnInvalidateWriter() throws JvnException {
         while (lockState == LockState.WRITING) {
             try {
                 wait();
@@ -101,7 +101,7 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     @Override
-    public Serializable jvnInvalidateWriterForReader() throws JvnException {
+    public synchronized Serializable jvnInvalidateWriterForReader() throws JvnException {
         switch (lockState) {
             case WRITING -> {
                 while (lockState == LockState.WRITING) {
