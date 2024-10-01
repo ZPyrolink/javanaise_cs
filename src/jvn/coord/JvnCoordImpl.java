@@ -169,7 +169,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 //            // ToDo: wait
 //            // ToDo: notify ?
 //        }
-        state.putLockStateByServer(js, LockState.READ);
+        state.putLockStateByServer(js, LockState.READING);
 
         return serializable;
     }
@@ -196,7 +196,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         object.jvnInvalidateWriter();
         object.jvnInvalidateReader();
 
-        state.putLockStateByServer(js, LockState.READ);
+        state.putLockStateByServer(js, LockState.READING);
 
 
 //        while (!state.canReadLock()) {
