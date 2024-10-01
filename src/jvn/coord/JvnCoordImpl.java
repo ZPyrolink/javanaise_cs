@@ -9,6 +9,7 @@
 
 package jvn.coord;
 
+import jvn.LockState;
 import jvn.object.JvnObject;
 import jvn.server.JvnRemoteServer;
 import jvn.utils.JvnException;
