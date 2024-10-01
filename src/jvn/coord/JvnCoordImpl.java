@@ -62,11 +62,11 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         }
 
         public boolean canReadLock() {
-            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.WRITE);
+            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.WRITING);
         }
 
         public boolean canWriteLock() {
-            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.READ);
+            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.READING);
         }
 
         public String getName() {
