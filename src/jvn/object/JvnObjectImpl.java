@@ -5,8 +5,6 @@ import jvn.server.JvnServerImpl;
 import jvn.utils.JvnException;
 
 import java.io.Serializable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class JvnObjectImpl implements JvnObject {
     private int id;
