@@ -9,77 +9,98 @@
 
 package jvn.coord;
 
-import jvn.LockState;
 import jvn.object.JvnObject;
 import jvn.server.JvnRemoteServer;
 import jvn.utils.JvnException;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
+class ObjectState {
+    // Unique identifier of the object
+    @Getter
+    private String name;
 
-public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord {
-    public static class ObjectState {
-        // Unique identifier of the object
-        private String name;
-
-        // (Value) of the object
-        private JvnObject value;
-
-        // Lock detain by the different servers
-        private Map<JvnRemoteServer, LockState> lockStateByServer;
-
-        public JvnObject getValue() {
-            return value;
-        }
-
-        public void setValue(JvnObject value) {
-            this.value = value;
-        }
-
-        public void putLockStateByServer(JvnRemoteServer jrs, LockState state) {
-            lockStateByServer.put(jrs, state);
-        }
-
-        public LockState getLockState(JvnRemoteServer server) {
-            return lockStateByServer.get(server);
-        }
-
-        public LockState removeLockStateByServer(JvnRemoteServer server) {
-            return lockStateByServer.remove(server);
-        }
-
-        public ObjectState(String name, JvnObject value, JvnRemoteServer server) {
-            this.name = name;
-            this.value = value;
-            this.lockStateByServer = new HashMap<>();
-            lockStateByServer.put(server, LockState.NONE);
-        }
-
-        public boolean canReadLock() {
-            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.WRITING);
-        }
-
-        public boolean canWriteLock() {
-            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.READING);
-        }
-
-        public String getName() {
-            return name;
-        }
+    public static Predicate<ObjectState> hasName(String n) {
+        return objectState -> objectState.name.equals(n);
     }
 
+    // (Value) of the object
+    @Getter
+    private JvnObject value;
+
+    // Lock detain by the different servers
+//        private Map<JvnRemoteServer, LockState> lockStateByServer;
+
+    private List<JvnRemoteServer> readers;
+
+    public void addReader(JvnRemoteServer r) {
+        readers.add(r);
+    }
+
+    public boolean removeReader(JvnRemoteServer r) {
+        return readers.remove(r);
+    }
+
+    public void forEachReaders(Consumer<JvnRemoteServer> action) {
+        readers.forEach(action);
+    }
+
+    @Getter
+    @Setter
+    private JvnRemoteServer writer;
+
+//        public void putLockStateByServer(JvnRemoteServer jrs, LockState state) {
+//            lockStateByServer.put(jrs, state);
+//        }
+//
+//        public LockState getLockState(JvnRemoteServer server) {
+//            return lockStateByServer.get(server);
+//        }
+//
+//        public LockState removeLockStateByServer(JvnRemoteServer server) {
+//            return lockStateByServer.remove(server);
+//        }
+
+    public ObjectState(String name, JvnObject value, JvnRemoteServer server) {
+        this.name = name;
+        this.value = value;
+//            this.lockStateByServer = new HashMap<>();
+//            lockStateByServer.put(server, LockState.NONE);
+        readers = new ArrayList<>();
+        writer = null;
+    }
+
+//        public boolean canReadLock() {
+//            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.WRITING);
+//        }
+//
+//        public boolean canWriteLock() {
+//            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.READING);
+//        }
+
+    public void terminate(JvnRemoteServer jr) {
+        removeReader(jr);
+        if (writer == jr)
+            writer = null;
+    }
+}
+
+public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord {
     private static final long serialVersionUID = 1L;
     public static final String COORD_NAME = "coordinator";
     public static final int COORD_PORT = 1099;
     public static final String COORD_HOST = "127.0.0.1";
 
-    public HashMap<Integer, ObjectState> states;
+    private Map<Integer, ObjectState> states;
 
     /**
      * Default constructor
@@ -90,6 +111,8 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         // to be completed
         Registry registry = LocateRegistry.createRegistry(COORD_PORT);
         registry.bind(COORD_NAME, this);
+
+        states = new HashMap<>(states);
     }
 
     /**
@@ -111,7 +134,8 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        states.put(jvnGetObjectId(), new ObjectState(jon, jo, js));
+        if (states.values().stream().noneMatch(ObjectState.hasName(jon)))
+            states.put(jvnGetObjectId(), new ObjectState(jon, jo, js));
     }
 
     /**
@@ -122,24 +146,11 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        ObjectState objState = null;
-
-        for (ObjectState obj : states.values()) {
-            if (obj.name.equals(jon)) {
-                objState = obj;
-                break;
-            }
-        }
-
-        if (objState == null)
-            throw new JvnException("The '" + jon + "' JVN object doesn't exists");
-
-        LockState lockState = objState.getLockState(js);
-
-//        while (!lockState.canRead()) {
-//            // ToDo: wait
-//            // ToDo: notify ?
-//        }
+        ObjectState objState = states
+                .values().stream()
+                .filter(ObjectState.hasName(jon))
+                .findFirst()
+                .orElseThrow(() -> new JvnException("The '" + jon + "' JVN object doesn't exists"));
 
         return objState.getValue();
     }
@@ -159,19 +170,16 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
             throw new JvnException();
 
         JvnObject object = state.getValue();
+        Serializable result = object.jvnGetSharedObject();
 
-        Serializable serializable = object.jvnGetSharedObject();
+        if (state.getWriter() != null) {
+            result = object.jvnInvalidateWriterForReader();
+            object.jvnSetSharedObject(result);
+            state.setWriter(null);
+        }
 
-        // ToDo
-        object.jvnInvalidateWriterForReader();
-
-//        while (!state.canReadLock()) {
-//            // ToDo: wait
-//            // ToDo: notify ?
-//        }
-        state.putLockStateByServer(js, LockState.READING);
-
-        return serializable;
+        state.addReader(js);
+        return result;
     }
 
     /**
@@ -189,22 +197,27 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
             throw new JvnException();
 
         JvnObject object = state.getValue();
+        Serializable result = object.jvnGetSharedObject();
 
-        Serializable serializable = object.jvnGetSharedObject();
+        if (state.getWriter() != null) {
+            result = object.jvnInvalidateWriter();
+            object.jvnSetSharedObject(result);
+            state.setWriter(null);
+        }
 
-        // ToDo
-        object.jvnInvalidateWriter();
-        object.jvnInvalidateReader();
+        state.forEachReaders(server -> {
+            if (server != js) {
+                try {
+                    server.jvnInvalidateReader(joi);
+                } catch (RemoteException | JvnException e) {
+                    throw new RuntimeException(e);
+                }
+                state.removeReader(js);
+            }
+        });
 
-        state.putLockStateByServer(js, LockState.READING);
-
-
-//        while (!state.canReadLock()) {
-//            // ToDo: wait
-//            // ToDo: notify ?
-//        }
-
-        return serializable;
+        state.setWriter(js);
+        return result;
     }
 
     /**
@@ -214,7 +227,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException, JvnException
      **/
     public void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        states.values().forEach(state -> state.removeLockStateByServer(js));
+        states.values().forEach(state -> state.terminate(js));
     }
 }
 
