@@ -9,6 +9,7 @@
 
 package jvn.coord;
 
+import jvn.LockState;
 import jvn.object.JvnObject;
 import jvn.server.JvnRemoteServer;
 import jvn.utils.JvnException;
@@ -61,11 +62,11 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         }
 
         public boolean canReadLock() {
-            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.WRITE);
+            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.WRITING);
         }
 
         public boolean canWriteLock() {
-            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.READ);
+            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.READING);
         }
 
         public String getName() {
@@ -168,7 +169,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 //            // ToDo: wait
 //            // ToDo: notify ?
 //        }
-        state.putLockStateByServer(js, LockState.READ);
+        state.putLockStateByServer(js, LockState.READING);
 
         return serializable;
     }
@@ -195,7 +196,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         object.jvnInvalidateWriter();
         object.jvnInvalidateReader();
 
-        state.putLockStateByServer(js, LockState.READ);
+        state.putLockStateByServer(js, LockState.READING);
 
 
 //        while (!state.canReadLock()) {
