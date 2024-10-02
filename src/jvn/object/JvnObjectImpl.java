@@ -35,26 +35,26 @@ public class JvnObjectImpl implements JvnObject {
     @Override
     public synchronized void jvnLockWrite() throws JvnException {
         switch (lockState) {
-            case NONE -> {
-                cachedValue = server.jvnLockWrite(id);
+            case NONE,READ_CACHED -> {
                 lockState = LockState.WRITING;
-            }
-                case WRITE_CACHED -> lockState = LockState.WRITING;
-            case READ_CACHED -> {
                 cachedValue = server.jvnLockWrite(id);
-                lockState = LockState.READ_WRITE_CACHED;
+            }
+            case WRITE_CACHED,READ_WRITE_CACHED -> {
+                lockState = LockState.WRITING;
             }
         }
     }
 
     @Override
     public synchronized void jvnUnLock() throws JvnException {
-        lockState = switch (lockState) {
-            case NONE, READ_WRITE_CACHED -> lockState;
-            case READ_CACHED, READING -> LockState.READ_CACHED;
-            case WRITE_CACHED, WRITING -> LockState.WRITE_CACHED;
-        };
-
+        switch (lockState) {
+            case WRITING , READ_WRITE_CACHED -> {
+                lockState = LockState.WRITE_CACHED;
+            }
+            case READING -> {
+                lockState =  LockState.READ_CACHED;
+            }
+            }
         notifyAll();
     }
 
