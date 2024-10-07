@@ -25,7 +25,7 @@ public class JvnObjectImpl implements JvnObject {
     public synchronized void jvnLockRead() throws JvnException {
         switch (lockState) {
             case NONE -> {
-                cachedValue = server.jvnLockRead(id);
+                cachedValue = JvnServerImpl.jvnGetServer().jvnLockRead(id);
                 lockState = LockState.READING;
             }
             case READ_CACHED -> lockState = LockState.READING;
@@ -38,7 +38,7 @@ public class JvnObjectImpl implements JvnObject {
         switch (lockState) {
             case NONE,READ_CACHED -> {
                 lockState = LockState.WRITING;
-                cachedValue = server.jvnLockWrite(id);
+                cachedValue = JvnServerImpl.jvnGetServer().jvnLockWrite(id);
             }
             case WRITE_CACHED,READ_WRITE_CACHED -> {
                 lockState = LockState.WRITING;

@@ -160,7 +160,18 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException, JvnException
      **/
     public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        ObjectState state = states.get(joi);
+        ObjectState state = states
+                .values()
+                .stream()
+                .filter(obj -> {
+                    try {
+                        return obj.getValue().jvnGetObjectId() == joi;
+                    } catch (JvnException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .findFirst()
+                .orElseThrow(() -> new JvnException(""));
 
         if (state == null)
             throw new JvnException();
@@ -187,10 +198,18 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException, JvnException
      **/
     public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        ObjectState state = states.get(joi);
-
-        if (state == null)
-            throw new JvnException();
+        ObjectState state = states
+                .values()
+                .stream()
+                .filter(obj -> {
+                    try {
+                        return obj.getValue().jvnGetObjectId() == joi;
+                    } catch (JvnException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .findFirst()
+                .orElseThrow(() -> new JvnException(""));
 
         JvnObject object = state.getValue();
         Serializable result = object.jvnGetSharedObject();
