@@ -100,7 +100,10 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public JvnObject jvnCreateObject(Serializable o) throws JvnException {
         try {
-            return new JvnObjectImpl(coordinator.jvnGetObjectId(), o, this);
+            int joi = this.coordinator.jvnGetObjectId();
+            JvnObjectImpl jo = new JvnObjectImpl(joi,o, this);
+            this.objects.put(joi, jo);
+            return jo;
         } catch (RemoteException e) {
             throw new JvnException();
         }
@@ -135,6 +138,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
         try {
             JvnObject object = this.coordinator.jvnLookupObject(jon, this);
             // on l'enregistre dans notre cash representé par la map interceptor
+            object.jvnSetServer(this);
             this.objects.put(object.jvnGetObjectId(), object);
             return object;
         } catch (JvnException e) {

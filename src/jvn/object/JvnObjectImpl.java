@@ -18,7 +18,7 @@ public class JvnObjectImpl implements JvnObject {
         cachedValue = o;
         this.id = id;
         server = jvnServer;
-        lockState = LockState.NONE;
+        lockState = LockState.WRITING;
     }
 
     @Override
@@ -117,5 +117,10 @@ public class JvnObjectImpl implements JvnObject {
             case WRITE_CACHED, READ_WRITE_CACHED -> lockState = LockState.READ_CACHED;
         }
         return cachedValue;
+    }
+
+    @Override
+    public void jvnSetServer(JvnServerImpl jvnServer) {
+            this.server=jvnServer;
     }
 }

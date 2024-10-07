@@ -7,6 +7,7 @@
 
 package jvn.object;
 
+import jvn.server.JvnServerImpl;
 import jvn.utils.JvnException;
 
 import java.io.Serializable;
@@ -87,4 +88,5 @@ public interface JvnObject extends Serializable {
     public Serializable jvnInvalidateWriterForReader() throws JvnException;
 
 
+    void jvnSetServer(JvnServerImpl jvnServer);
 }

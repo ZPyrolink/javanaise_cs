@@ -180,7 +180,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         Serializable result = object.jvnGetSharedObject();
 
         if (state.getWriter() != null) {
-            result = object.jvnInvalidateWriterForReader();
+            result = js.jvnInvalidateWriterForReader(joi);
             object.jvnSetSharedObject(result);
             state.setWriter(null);
         }
@@ -215,7 +215,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         Serializable result = object.jvnGetSharedObject();
 
         if (state.getWriter() != null) {
-            result = object.jvnInvalidateWriter();
+            result = js.jvnInvalidateWriter(joi);
             object.jvnSetSharedObject(result);
             state.setWriter(null);
         }
