@@ -1,6 +1,8 @@
 package jvn.object;
 
 import jvn.LockState;
+import jvn.server.JvnLocalServer;
+import jvn.server.JvnRemoteServer;
 import jvn.server.JvnServerImpl;
 import jvn.utils.JvnException;
 
@@ -9,11 +11,12 @@ import java.io.Serializable;
 public class JvnObjectImpl implements JvnObject {
     private int id;
     private Serializable cachedValue;
-    private JvnServerImpl server;
+    private transient JvnLocalServer server;
     private LockState lockState;
 
-    public JvnObjectImpl(Serializable o, JvnServerImpl jvnServer) {
+    public JvnObjectImpl(int id, Serializable o, JvnServerImpl jvnServer) {
         cachedValue = o;
+        this.id = id;
         server = jvnServer;
         lockState = LockState.NONE;
     }

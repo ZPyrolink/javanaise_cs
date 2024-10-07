@@ -57,7 +57,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
         this.registery = LocateRegistry.getRegistry(JvnCoordImpl.COORD_PORT);
         this.coordinator = (JvnRemoteCoord) registery.lookup(JvnCoordImpl.COORD_NAME);
         this.id = this.coordinator.jvnGetObjectId();
-        this.name = "server_"+this.id; //TODO give it a name
+        this.name = "server_"+this.id;
         registery.bind(name, this);
     }
 
@@ -99,9 +99,11 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws JvnException
      **/
     public JvnObject jvnCreateObject(Serializable o) throws JvnException {
-        // to be completed
-        JvnObject jvnObject = new JvnObjectImpl(o, this);
-        return jvnObject;
+        try {
+            return new JvnObjectImpl(coordinator.jvnGetObjectId(), o, this);
+        } catch (RemoteException e) {
+            throw new JvnException();
+        }
     }
 
     /**
@@ -135,6 +137,8 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
             // on l'enregistre dans notre cash representé par la map interceptor
             this.objects.put(object.jvnGetObjectId(), object);
             return object;
+        } catch (JvnException e) {
+            return null;
         } catch (RemoteException e) {
             e.printStackTrace();
             return null;

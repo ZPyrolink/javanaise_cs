@@ -25,14 +25,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 class ObjectState {
-    // Unique identifier of the object
-    @Getter
-    private String name;
-
-    public static Predicate<ObjectState> hasName(String n) {
-        return objectState -> objectState.name.equals(n);
-    }
-
     // (Value) of the object
     @Getter
     private JvnObject value;
@@ -70,8 +62,7 @@ class ObjectState {
 //            return lockStateByServer.remove(server);
 //        }
 
-    public ObjectState(String name, JvnObject value, JvnRemoteServer server) {
-        this.name = name;
+    public ObjectState(JvnObject value, JvnRemoteServer server) {
         this.value = value;
 //            this.lockStateByServer = new HashMap<>();
 //            lockStateByServer.put(server, LockState.NONE);
@@ -100,7 +91,9 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     public static final int COORD_PORT = 1099;
     public static final String COORD_HOST = "127.0.0.1";
 
-    private Map<Integer, ObjectState> states;
+    private static int JVN_OBJECT_ID = 0;
+
+    private Map<String, ObjectState> states;
 
     /**
      * Default constructor
@@ -112,9 +105,16 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         Registry registry = LocateRegistry.createRegistry(COORD_PORT);
         registry.bind(COORD_NAME, this);
 
-        states = new HashMap<>(states);
+        states = new HashMap<>();
     }
 
+    public static void main(String[] args) {
+        try {
+            new JvnCoordImpl();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * Allocate a NEW JVN object id (usually allocated to a
      * newly created JVN object)
@@ -122,7 +122,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public int jvnGetObjectId() throws java.rmi.RemoteException, JvnException {
-        return states.isEmpty() ? 0 : states.keySet().stream().max(Comparator.naturalOrder()).get() + 1;
+        return JVN_OBJECT_ID++;
     }
 
     /**
@@ -134,8 +134,8 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        if (states.values().stream().noneMatch(ObjectState.hasName(jon)))
-            states.put(jvnGetObjectId(), new ObjectState(jon, jo, js));
+        if (!states.containsKey(jon))
+            states.put(jon, new ObjectState(jo, js));
     }
 
     /**
@@ -146,13 +146,9 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      **/
     public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        ObjectState objState = states
-                .values().stream()
-                .filter(ObjectState.hasName(jon))
-                .findFirst()
-                .orElseThrow(() -> new JvnException("The '" + jon + "' JVN object doesn't exists"));
-
-        return objState.getValue();
+        return Optional.ofNullable(states.get(jon))
+                .orElseThrow(() -> new JvnException("The '" + jon + "' JVN object doesn't exists"))
+                .getValue();
     }
 
     /**
