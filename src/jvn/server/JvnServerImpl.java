@@ -2,9 +2,9 @@
  * JAVANAISE Implementation
  * JvnServerImpl class
  * Implementation of a Jvn server
- * Contact: 
+ * Contact:
  *
- * Authors: 
+ * Authors:
  */
 
 package jvn.server;
@@ -133,23 +133,19 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws JvnException
      **/
     public JvnObject jvnLookupObject(String jon) throws JvnException {
-        // to be completed
-        //une fois l'objet lookup
         try {
             JvnObject object = this.coordinator.jvnLookupObject(jon, this);
-            // on l'enregistre dans notre cash representé par la map interceptor
-            object.jvnSetServer(this);
-            this.objects.put(object.jvnGetObjectId(), object);
+            if (object != null) {
+
+                object.jvnSetServer(this);
+                object.resetState();
+                this.objects.put(object.jvnGetObjectId(), object);
+            }
             return object;
-        } catch (JvnException e) {
-            return null;
         } catch (RemoteException e) {
-            e.printStackTrace();
-            return null;
+            throw new JvnException();
         }
-
     }
-
     /**
      * Get a Read lock on a JVN object
      *
@@ -188,9 +184,6 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 
             // Mettre à jour l'objet dans notre cache (HashMap `objects`)
             JvnObject obj = objects.get(joi);
-            if (obj != null) {
-                obj.jvnSetSharedObject(updatedState);  // Mettre à jour l'état de l'objet
-            }
             // Retourner l'état mis à jour de l'objet
             return updatedState;
         } catch (RemoteException e) {

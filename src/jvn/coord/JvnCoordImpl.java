@@ -2,248 +2,159 @@
  * JAVANAISE Implementation
  * JvnCoordImpl class
  * This class implements the Javanaise central coordinator
- * Contact:  
+ * Contact:
  *
- * Authors: 
+ * Authors:
  */
 
 package jvn.coord;
 
-import jvn.object.JvnObject;
-import jvn.server.JvnRemoteServer;
-import jvn.utils.JvnException;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.io.Serializable;
+import java.rmi.AlreadyBoundException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
-class ObjectState {
-    // (Value) of the object
-    @Getter
-    private JvnObject value;
-
-    // Lock detain by the different servers
-//        private Map<JvnRemoteServer, LockState> lockStateByServer;
-
-    private List<JvnRemoteServer> readers;
-
-    public void addReader(JvnRemoteServer r) {
-        readers.add(r);
-    }
-
-    public boolean removeReader(JvnRemoteServer r) {
-        return readers.remove(r);
-    }
-
-    public void forEachReaders(Consumer<JvnRemoteServer> action) {
-        readers.forEach(action);
-    }
-
-    @Getter
-    @Setter
-    private JvnRemoteServer writer;
-
-//        public void putLockStateByServer(JvnRemoteServer jrs, LockState state) {
-//            lockStateByServer.put(jrs, state);
-//        }
-//
-//        public LockState getLockState(JvnRemoteServer server) {
-//            return lockStateByServer.get(server);
-//        }
-//
-//        public LockState removeLockStateByServer(JvnRemoteServer server) {
-//            return lockStateByServer.remove(server);
-//        }
-
-    public ObjectState(JvnObject value, JvnRemoteServer server) {
-        this.value = value;
-//            this.lockStateByServer = new HashMap<>();
-//            lockStateByServer.put(server, LockState.NONE);
-        readers = new ArrayList<>();
-        writer = null;
-    }
-
-//        public boolean canReadLock() {
-//            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.WRITING);
-//        }
-//
-//        public boolean canWriteLock() {
-//            return lockStateByServer.values().stream().noneMatch(obj -> obj == LockState.READING);
-//        }
-
-    public void terminate(JvnRemoteServer jr) {
-        removeReader(jr);
-        if (writer == jr)
-            writer = null;
-    }
-}
+import jvn.object.JvnObject;
+import jvn.server.JvnRemoteServer;
+import jvn.utils.JvnException;
+import java.io.Serializable;
 
 public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord {
+
     private static final long serialVersionUID = 1L;
+
+
+    private int id = 0;
+
+    private Map<String, Integer> nameMap = new HashMap<>();
+
+    private Map<Integer, JvnObject> objectMap = new HashMap<>();
+
+    private transient Map<Integer, JvnRemoteServer> writerMap = new HashMap<>();
+
+
+    private transient Map<Integer, ArrayList<JvnRemoteServer>> readerMap = new HashMap<>();
+
+    // Registry for communication
     public static final String COORD_NAME = "coordinator";
     public static final int COORD_PORT = 1099;
     public static final String COORD_HOST = "127.0.0.1";
-
-    private static int JVN_OBJECT_ID = 0;
-
-    private Map<String, ObjectState> states;
+    public static final String PROPERTY = "java.rmi.server.hostname";
 
     /**
      * Default constructor
      *
-     * @throws JvnException
-     **/
-    private JvnCoordImpl() throws Exception {
-        // to be completed
+     * @throws RemoteException
+     * @throws AlreadyBoundException
+     */
+    private JvnCoordImpl() throws RemoteException, AlreadyBoundException {
         Registry registry = LocateRegistry.createRegistry(COORD_PORT);
         registry.bind(COORD_NAME, this);
-
-        states = new HashMap<>();
     }
 
     public static void main(String[] args) {
         try {
-            new JvnCoordImpl();
+            // Créer le serveur
+            System.setProperty(PROPERTY, COORD_HOST);
+            JvnCoordImpl coord = new JvnCoordImpl();
+            if (coord.isReady()) {
+                System.out.println("Server ready");
+            } else {
+                throw new JvnException(JvnCoordImpl.class.getName() + " is not ready");
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    /**
-     * Allocate a NEW JVN object id (usually allocated to a
-     * newly created JVN object)
-     *
-     * @throws java.rmi.RemoteException,JvnException
-     **/
-    public int jvnGetObjectId() throws java.rmi.RemoteException, JvnException {
-        return JVN_OBJECT_ID++;
+
+
+    public boolean isReady() throws RemoteException, NotBoundException {
+        Registry registry = LocateRegistry.getRegistry(COORD_PORT);
+        return registry.lookup(COORD_NAME) != null;
     }
 
-    /**
-     * Associate a symbolic name with a JVN object
-     *
-     * @param jon : the JVN object name
-     * @param jo  : the JVN object
-     * @param js  : the remote reference of the JVNServer
-     * @throws java.rmi.RemoteException,JvnException
-     **/
-    public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        if (!states.containsKey(jon))
-            states.put(jon, new ObjectState(jo, js));
+    @Override
+    public int jvnGetObjectId() throws RemoteException, jvn.utils.JvnException {
+        return ++this.id;
     }
 
-    /**
-     * Get the reference of a JVN object managed by a given JVN server
-     *
-     * @param jon : the JVN object name
-     * @param js  : the remote reference of the JVNServer
-     * @throws java.rmi.RemoteException,JvnException
-     **/
-    public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        return Optional.ofNullable(states.get(jon))
-                .orElseThrow(() -> new JvnException("The '" + jon + "' JVN object doesn't exists"))
-                .getValue();
+    @Override
+    public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws RemoteException, JvnException {
+        int id = jo.jvnGetObjectId();
+
+        this.nameMap.put(jon, id);
+        this.objectMap.put(id, jo);
+        this.writerMap.put(id, js);
+        this.readerMap.put(id, new ArrayList<>());
     }
 
-    /**
-     * Get a Read lock on a JVN object managed by a given JVN server
-     *
-     * @param joi : the JVN object identification
-     * @param js  : the remote reference of the server
-     * @return the current JVN object state
-     * @throws java.rmi.RemoteException, JvnException
-     **/
-    public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        ObjectState state = states
-                .values()
-                .stream()
-                .filter(obj -> {
-                    try {
-                        return obj.getValue().jvnGetObjectId() == joi;
-                    } catch (JvnException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .findFirst()
-                .orElseThrow(() -> new JvnException(""));
+    @Override
+    public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws RemoteException, JvnException {
+        return this.objectMap.get(this.nameMap.get(jon));
+    }
 
-        if (state == null)
-            throw new JvnException();
+    @Override
+    public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws RemoteException, JvnException {
+        JvnObject jo = this.objectMap.get(joi);
+        Serializable serializable = jo.jvnGetSharedObject();
+        JvnRemoteServer writer = this.writerMap.get(joi);
 
-        JvnObject object = state.getValue();
-        Serializable result = object.jvnGetSharedObject();
+        if (writer != null && !writer.equals(js)) {
+            serializable = writer.jvnInvalidateWriterForReader(joi);
+            this.writerMap.put(joi, null);
+            this.readerMap.get(joi).add(writer);
 
-        if (state.getWriter() != null) {
-            result = js.jvnInvalidateWriterForReader(joi);
-            object.jvnSetSharedObject(result);
-            state.setWriter(null);
+
+            jo.jvnSetSharedObject(serializable);
         }
 
-        state.addReader(js);
-        return result;
+        this.readerMap.get(joi).add(js);
+        return serializable;
     }
 
-    /**
-     * Get a Write lock on a JVN object managed by a given JVN server
-     *
-     * @param joi : the JVN object identification
-     * @param js  : the remote reference of the server
-     * @return the current JVN object state
-     * @throws java.rmi.RemoteException, JvnException
-     **/
-    public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        ObjectState state = states
-                .values()
-                .stream()
-                .filter(obj -> {
-                    try {
-                        return obj.getValue().jvnGetObjectId() == joi;
-                    } catch (JvnException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .findFirst()
-                .orElseThrow(() -> new JvnException(""));
+    @Override
+    public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws RemoteException, JvnException {
+        JvnObject jo = this.objectMap.get(joi);
+        Serializable serializable = jo.jvnGetSharedObject();
+        JvnRemoteServer writer = this.writerMap.get(joi);
 
-        JvnObject object = state.getValue();
-        Serializable result = object.jvnGetSharedObject();
 
-        if (state.getWriter() != null) {
-            result = js.jvnInvalidateWriter(joi);
-            object.jvnSetSharedObject(result);
-            state.setWriter(null);
+        if (writer != null && (!writer.equals(js))) {
+
+            serializable = writer.jvnInvalidateWriter(joi);
+            jo.jvnSetSharedObject(serializable);
+
         }
 
-        state.forEachReaders(server -> {
-            if (server != js) {
-                try {
-                    server.jvnInvalidateReader(joi);
-                } catch (RemoteException | JvnException e) {
-                    throw new RuntimeException(e);
-                }
-                state.removeReader(js);
+        for (JvnRemoteServer reader : this.readerMap.get(joi)) {
+            if (!reader.equals(js))
+                reader.jvnInvalidateReader(joi);
+        }
+
+        this.readerMap.get(joi).clear();
+        this.writerMap.put(joi, js);
+        return serializable;
+    }
+
+    @Override
+    public void jvnTerminate(JvnRemoteServer js) throws RemoteException, JvnException {
+        for (var entry : this.writerMap.entrySet()) {
+            JvnRemoteServer writer = entry.getValue();
+            if (writer != null && (writer.equals(js))) {
+                int joi = entry.getKey();
+                JvnObject jo = this.objectMap.get(joi);
+                Serializable serializable = writer.jvnInvalidateWriter(joi);
+                jo.jvnSetSharedObject(serializable);
+                this.writerMap.put(joi, null);
             }
-        });
+        }
 
-        state.setWriter(js);
-        return result;
-    }
-
-    /**
-     * A JVN server terminates
-     *
-     * @param js : the remote reference of the server
-     * @throws java.rmi.RemoteException, JvnException
-     **/
-    public void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        states.values().forEach(state -> state.terminate(js));
+        this.readerMap.forEach((id, readers) -> readers.remove(js));
     }
 }
-
- 

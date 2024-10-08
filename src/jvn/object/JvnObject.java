@@ -89,4 +89,6 @@ public interface JvnObject extends Serializable {
 
 
     void jvnSetServer(JvnServerImpl jvnServer);
+
+    void resetState();
 }

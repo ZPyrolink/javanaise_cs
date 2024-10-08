@@ -123,4 +123,9 @@ public class JvnObjectImpl implements JvnObject {
     public void jvnSetServer(JvnServerImpl jvnServer) {
             this.server=jvnServer;
     }
+
+    @Override
+    public void resetState() {
+        lockState = LockState.NONE;
+    }
 }
