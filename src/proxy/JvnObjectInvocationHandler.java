@@ -27,6 +27,15 @@ public class JvnObjectInvocationHandler implements InvocationHandler {
         }
     }
 
+    public static ReadWrite lookupOrRegister(JvnLocalServer js, ReadWrite jos, String jon) throws JvnException {
+        ReadWrite result = lookup(js, jon);
+        
+        if (result == null)
+            result = register(js, jos, jon);
+
+        return result;
+    }
+
     public static ReadWrite lookup(JvnLocalServer server, String jon) throws JvnException {
         JvnObject result = server.jvnLookupObject(jon);
         return result == null ? null : (ReadWrite) newInstance(result);
