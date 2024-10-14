@@ -1,8 +1,10 @@
-package jvn.object;
+package proxy;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+
+import jvn.object.JvnObject;
 import jvn.utils.JvnException;
 
 public class JvnObjectInvocationHandler implements InvocationHandler {
@@ -26,16 +28,19 @@ public class JvnObjectInvocationHandler implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        System.out.println("Interception de la méthode : " + method.getName());
+        LockRequester requester = method.getAnnotation(LockRequester.class);
 
-        // Exemple de gestion du cache avant d'appeler la méthode réelle
-        // if (method.getName().equals("someCachedMethod")) { ... }
+        if (requester == null)
+            return method.invoke(proxy, args);
 
-        // Appel de la méthode réelle sur l'objet
+        switch (requester.requestType()) {
+            case READ -> jvnObject.jvnLockRead();
+            case WRITE -> jvnObject.jvnLockWrite();
+        }
+
         Object result = method.invoke(jvnObject, args);
 
-        // Logique post-traitement si nécessaire
-        System.out.println("Appel de la méthode terminé : " + method.getName());
+        jvnObject.jvnUnLock();
 
         return result;
     }
