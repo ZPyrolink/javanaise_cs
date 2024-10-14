@@ -12,7 +12,7 @@ import proxy.LockRequester;
 import proxy.ReadWrite;
 import proxy.RequestType;
 
-public class SentenceV2 implements ReadWrite {
+public class SentenceV2 implements ReadWrite<String> {
     /**
      *
      */

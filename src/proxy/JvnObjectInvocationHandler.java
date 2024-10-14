@@ -27,26 +27,28 @@ public class JvnObjectInvocationHandler implements InvocationHandler {
         }
     }
 
-    public static ReadWrite lookupOrRegister(JvnLocalServer js, ReadWrite jos, String jon) throws JvnException {
-        ReadWrite result = lookup(js, jon);
-        
+    public static <E> ReadWrite<E> lookupOrRegister(JvnLocalServer js, ReadWrite<E> jos, String jon) throws JvnException {
+        ReadWrite<E> result = lookup(js, jon);
+
         if (result == null)
             result = register(js, jos, jon);
 
         return result;
     }
 
-    public static ReadWrite lookup(JvnLocalServer server, String jon) throws JvnException {
+    @SuppressWarnings("unchecked")
+    public static <E> ReadWrite<E> lookup(JvnLocalServer server, String jon) throws JvnException {
         JvnObject result = server.jvnLookupObject(jon);
-        return result == null ? null : (ReadWrite) newInstance(result);
+        return result == null ? null : (ReadWrite<E>) newInstance(result);
     }
 
-    public static ReadWrite register(JvnLocalServer js, ReadWrite jos, String jon) throws JvnException {
+    @SuppressWarnings("unchecked")
+    public static <E> ReadWrite<E> register(JvnLocalServer js, ReadWrite<E> jos, String jon) throws JvnException {
         JvnObject jo = js.jvnCreateObject(jos);
         // after creation, I have a write lock on the object
         jo.jvnUnLock();
         js.jvnRegisterObject(jon, jo);
-        return (ReadWrite) newInstance(jo);
+        return (ReadWrite<E>) newInstance(jo);
     }
 
     @Override

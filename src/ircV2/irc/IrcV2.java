@@ -22,7 +22,7 @@ public class IrcV2 {
     public TextArea text;
     public TextField data;
     Frame frame;
-    ReadWrite sentence;
+    ReadWrite<String> sentence;
 
 
     /**
@@ -36,7 +36,7 @@ public class IrcV2 {
 
             // look up the IRC object in the JVN server
             // if not found, create it, and register it in the JVN server
-            ReadWrite jo = JvnObjectInvocationHandler.lookup(js, "IRC");
+            ReadWrite<String> jo = JvnObjectInvocationHandler.lookup(js, "IRC");
 
             if (jo == null) {
                 jo = JvnObjectInvocationHandler.register(js, new SentenceV2(), "IRC");
@@ -55,7 +55,7 @@ public class IrcV2 {
      *
      * @param jo the JVN object representing the Chat
      **/
-    public IrcV2(ReadWrite jo) {
+    public IrcV2(ReadWrite<String> jo) {
         sentence = jo;
         frame = new Frame();
         frame.setLayout(new GridLayout(1, 1));

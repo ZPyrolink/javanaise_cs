@@ -2,10 +2,10 @@ package proxy;
 
 import java.io.Serializable;
 
-public interface ReadWrite extends Serializable {
+public interface ReadWrite<E> extends Serializable {
     @LockRequester(requestType = RequestType.WRITE)
-    void write(String text);
+    void write(E text);
 
     @LockRequester(requestType = RequestType.READ)
-    String read();
+    E read();
 }
