@@ -11,6 +11,15 @@ public class Test {
     public static void main(String[] args) {
         JvnServerImpl server = JvnServerImpl.jvnGetServer();
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                System.out.println("Closing server");
+                server.jvnTerminate();
+            } catch (JvnException e) {
+                throw new RuntimeException(e);
+            }
+        }));
+
         try {
             ReadWrite<Integer> data = JvnObjectInvocationHandler.lookup(
                     server,
